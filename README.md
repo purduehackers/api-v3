@@ -1,15 +1,20 @@
-# phack-api-2
+# Purdue Hackers API v2
 
-To install dependencies:
+New coordination server to control all the doohickeys! (see [original](https://github.com/purduehackers/api))
 
-```bash
+## Usage
+
+Install dependencies:
+
+```
 bun install
 ```
 
-To run:
+Run the dev server:
 
-```bash
-bun run index.ts
 ```
+~:$ bun dev
 
-This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+$ bun run --hot src/index.ts
+Server is running on http://localhost:3000
+```
