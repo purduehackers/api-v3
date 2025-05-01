@@ -1,4 +1,4 @@
-# Purdue Hackers API v2
+# Purdue Hackers API v3
 
 New coordination server to control all the doohickeys! (see [original](https://github.com/purduehackers/api))
 
