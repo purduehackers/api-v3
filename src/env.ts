@@ -5,6 +5,7 @@ export const env = createEnv({
   server: {
     SANITY_PROJECT_ID: z.string(),
     SANITY_TOKEN: z.string(),
+    DISCORD_API_KEY: z.string(),
     PHONE_API_KEY: z.string(),
     DOOR_OPENER_API_KEY: z.string(),
   },
