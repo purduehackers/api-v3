@@ -43,11 +43,13 @@ router.group("/discord", (app) =>
           const message = validation.data;
 
           if (message.token !== env.DISCORD_API_KEY) {
+            ws.send(JSON.stringify({ auth: "rejected" }));
             ws.close();
             return;
           }
 
           ws.data.bots.addClient(ws);
+          ws.send(JSON.stringify({ auth: "complete" }));
           return;
         }
 
