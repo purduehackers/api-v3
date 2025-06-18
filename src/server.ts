@@ -10,6 +10,7 @@ app.get("/", () => {
   return JSON.stringify({
     ok: true,
     readme: "Welcome to the Purdue Hackers API!",
+    version: 3,
   });
 });
 

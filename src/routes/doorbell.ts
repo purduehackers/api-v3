@@ -4,13 +4,38 @@ import { z } from "zod";
 
 import { env } from "../env";
 
-// Validate messages to and from the doorbell
 const messageSchema = z.object({
   type: z.enum(["set", "status"]),
   ringing: z.boolean(),
 });
 
 type DoorbellMessage = z.infer<typeof messageSchema>;
+
+class DoorbellClientManager {
+  protected clients: Set<ElysiaWS>;
+
+  constructor() {
+    this.clients = new Set();
+  }
+
+  addClient(client: ElysiaWS) {
+    this.clients.add(client);
+  }
+
+  removeClient(client: ElysiaWS) {
+    this.clients.delete(client);
+  }
+
+  sendMessageToClient(client: ElysiaWS, message: DoorbellMessage) {
+    return client.send(JSON.stringify(message));
+  }
+
+  sendToConnectedClients(message: DoorbellMessage) {
+    for (const client of this.clients) {
+      this.sendMessageToClient(client, message);
+    }
+  }
+}
 
 const router = new Elysia();
 
@@ -73,31 +98,5 @@ router.group("/doorbell", (app) => {
 
   return app;
 });
-
-class DoorbellClientManager {
-  protected clients: Set<ElysiaWS>;
-
-  constructor() {
-    this.clients = new Set();
-  }
-
-  addClient(client: ElysiaWS) {
-    this.clients.add(client);
-  }
-
-  removeClient(client: ElysiaWS) {
-    this.clients.delete(client);
-  }
-
-  sendMessageToClient(client: ElysiaWS, message: DoorbellMessage) {
-    return client.send(JSON.stringify(message));
-  }
-
-  sendToConnectedClients(message: DoorbellMessage) {
-    for (const client of this.clients) {
-      this.sendMessageToClient(client, message);
-    }
-  }
-}
 
 export default router;

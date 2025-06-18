@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-v3
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
