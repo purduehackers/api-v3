@@ -18,86 +18,23 @@ const discordMessageSchema = z.object({
 });
 type DiscordMessage = z.infer<typeof discordMessageSchema>;
 
-const router = new Elysia();
-
-router.group("/discord", (app) =>
-  app
-    .decorate("bots", new BotClientManager())
-    .decorate("dashboards", new DashboardClientManager())
-    .ws("/bot", {
-      message: (ws, data) => {
-        let result: unknown;
-
-        try {
-          result = JSON.parse(String(data));
-        } catch {
-          result = data as unknown;
-        }
-
-        const verified = ws.data.bots.checkVerified(ws);
-
-        if (!verified) {
-          const validation = authMessageSchema.safeParse(result);
-          if (!validation || !validation.success) return;
-
-          const message = validation.data;
-
-          if (message.token !== env.DISCORD_API_KEY) {
-            ws.send(JSON.stringify({ auth: "rejected" }));
-            ws.close();
-            return;
-          }
-
-          ws.data.bots.addClient(ws);
-          ws.send(JSON.stringify({ auth: "complete" }));
-          return;
-        }
-
-        const validation = discordMessageSchema.safeParse(result);
-
-        if (!validation || !validation.success) return;
-
-        const message = validation.data;
-
-        ws.data.dashboards.sendToConnectedClients(message);
-      },
-      close: (ws) => {
-        const verified = ws.data.bots.checkVerified(ws);
-        if (verified) {
-          ws.data.bots.removeClient(ws);
-        }
-      },
-    })
-    .ws("/dashboard", {
-      open: (ws) => {
-        ws.data.dashboards.addClient(ws);
-      },
-      close: (ws) => {
-        ws.data.dashboards.removeClient(ws);
-      },
-    }),
-);
-
-export default router;
-
 class BotClientManager {
-  protected clients: Set<ElysiaWS>;
+  protected clients: Record<string, ElysiaWS>;
 
   constructor() {
-    this.clients = new Set();
+    this.clients = {};
   }
 
   checkVerified(client: ElysiaWS) {
-    if (this.clients.has(client)) return true;
-    return false;
+    return !!this.clients[client.id];
   }
 
   addClient(client: ElysiaWS) {
-    this.clients.add(client);
+    this.clients[client.id] = client;
   }
 
   removeClient(client: ElysiaWS) {
-    this.clients.delete(client);
+    delete this.clients[client.id];
   }
 
   sendMessageToClient(client: ElysiaWS, message: DiscordMessage) {
@@ -105,7 +42,7 @@ class BotClientManager {
   }
 
   sendToConnectedClients(message: DiscordMessage) {
-    for (const client of this.clients) {
+    for (const client of Object.values(this.clients)) {
       this.sendMessageToClient(client, message);
     }
   }
@@ -136,3 +73,65 @@ class DashboardClientManager {
     }
   }
 }
+
+const router = new Elysia();
+
+router.group("/discord", (app) =>
+  app
+    .decorate("bots", new BotClientManager())
+    .decorate("dashboards", new DashboardClientManager())
+    .ws("/bot", {
+      message: (ws, data) => {
+        let result: unknown;
+        try {
+          result = JSON.parse(String(data));
+        } catch {
+          result = data as unknown;
+        }
+
+        const verified = ws.data.bots.checkVerified(ws);
+        if (!verified) {
+          const validation = authMessageSchema.safeParse(result);
+          if (!validation || !validation.success) {
+            return;
+          }
+
+          const message = validation.data as AuthenticationMessage;
+
+          if (message.token !== env.DISCORD_API_KEY) {
+            ws.send(JSON.stringify({ auth: "rejected" }));
+            ws.close();
+            return;
+          }
+
+          ws.data.bots.addClient(ws);
+          ws.send(JSON.stringify({ auth: "complete" }));
+          return;
+        }
+
+        const validation = discordMessageSchema.safeParse(result);
+        if (!validation || !validation.success) {
+          return;
+        }
+
+        const message = validation.data as DiscordMessage;
+        ws.data.dashboards.sendToConnectedClients(message);
+      },
+      close: (ws) => {
+        const verified = ws.data.bots.checkVerified(ws);
+        if (verified) {
+          ws.data.bots.removeClient(ws);
+        }
+      },
+    })
+    .ws("/dashboard", {
+      open: (ws) => {
+        ws.data.dashboards.addClient(ws);
+      },
+      close: (ws) => {
+        ws.data.dashboards.removeClient(ws);
+      },
+    }),
+);
+
+export default router;
