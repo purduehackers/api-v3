@@ -291,12 +291,12 @@ function createPhoneWsHandler(phoneType: PhoneType) {
       console.log(`[${phoneType}] phone waiting for auth...`);
     },
     message(ws: any, data: any) {
-      console.log(`[${phoneType}] RAW WS message: type=${typeof data} data=${String(data).slice(0, 200)}`);
       const conn = phoneConnections.get(ws.id);
       if (!conn) return;
 
       if (!conn.authenticated) {
-        const key = String(data).trim();
+        // Auth message is a raw string (API key), not JSON
+        const key = typeof data === "string" ? data.trim() : String(data).trim();
         if (key !== env.PHONE_API_KEY) {
           console.log(`[${phoneType}] auth rejected`);
           ws.close();
@@ -317,12 +317,8 @@ function createPhoneWsHandler(phoneType: PhoneType) {
         return;
       }
 
-      let message: any;
-      try {
-        message = JSON.parse(String(data));
-      } catch {
-        return;
-      }
+      // Bun auto-parses JSON WS messages into objects
+      const message = typeof data === "string" ? JSON.parse(data) : data;
 
       console.log(
         `[${phoneType}] Phone Socket rx: ${JSON.stringify(message)}`
@@ -367,17 +363,15 @@ router.group("/phonebell", (app) =>
         signalingClients.set(ws.id, { ws, pingInterval });
       },
       message(ws: any, data: any) {
-        const text = String(data);
+        // Bun auto-parses JSON, so re-serialize for relay
+        const text = typeof data === "string" ? data : JSON.stringify(data);
         console.log(`[Signaling] rx from ${ws.id}: ${text.slice(0, 100)}`);
         // Relay to all other signaling clients
-        let relayCount = 0;
         for (const [id, client] of signalingClients) {
           if (id !== ws.id) {
             client.ws.send(text);
-            relayCount++;
           }
         }
-        console.log(`[Signaling] relayed to ${relayCount} clients`);
       },
       close(ws: any) {
         const client = signalingClients.get(ws.id);
