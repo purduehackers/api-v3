@@ -367,12 +367,16 @@ router.group("/phonebell", (app) =>
       },
       message(ws: any, data: any) {
         const text = String(data);
+        console.log(`[Signaling] rx from ${ws.id}: ${text.slice(0, 100)}`);
         // Relay to all other signaling clients
+        let relayCount = 0;
         for (const [id, client] of signalingClients) {
           if (id !== ws.id) {
             client.ws.send(text);
+            relayCount++;
           }
         }
+        console.log(`[Signaling] relayed to ${relayCount} clients`);
       },
       close(ws: any) {
         const client = signalingClients.get(ws.id);
