@@ -291,6 +291,7 @@ function createPhoneWsHandler(phoneType: PhoneType) {
       console.log(`[${phoneType}] phone waiting for auth...`);
     },
     message(ws: any, data: any) {
+      console.log(`[${phoneType}] RAW WS message: type=${typeof data} data=${String(data).slice(0, 200)}`);
       const conn = phoneConnections.get(ws.id);
       if (!conn) return;
 
