@@ -47,6 +47,19 @@ const signalingClients = new Map<
   { ws: any; pingInterval: ReturnType<typeof setInterval> }
 >();
 
+// --- Door Opener State ---
+const doorOpenerClients = new Map<
+  string,
+  { ws: any; pingInterval: ReturnType<typeof setInterval> }
+>();
+
+function triggerDoorOpener() {
+  console.log(`[DoorOpener] Sending open command to ${doorOpenerClients.size} client(s)`);
+  for (const client of doorOpenerClients.values()) {
+    client.ws.send(JSON.stringify({ type: "open" }));
+  }
+}
+
 // --- Phone Helper Functions ---
 
 function sendToPhone(conn: PhoneConnection, message: OutgoingMessage) {
@@ -156,7 +169,8 @@ function handleDial(conn: PhoneConnection, number: string) {
 
     case "in_call": {
       if (conn.phoneType === "Inside" && number === "0") {
-        // TODO: Tell door opener to open
+        console.log("[Inside] Door opener triggered");
+        triggerDoorOpener();
       }
       break;
     }
@@ -345,6 +359,37 @@ router.group("/phonebell", (app) =>
   app
     .ws("/outside", createPhoneWsHandler("Outside"))
     .ws("/inside", createPhoneWsHandler("Inside"))
+    .ws("/door-opener", {
+      open(ws: any) {
+        console.log(`[DoorOpener] client connected: ${ws.id}, awaiting auth...`);
+      },
+      message(ws: any, data: any) {
+        // Check if already authenticated
+        if (doorOpenerClients.has(ws.id)) return;
+
+        // Auth: raw string API key
+        const key = typeof data === "string" ? data.trim() : String(data).trim();
+        if (key !== env.DOOR_OPENER_API_KEY) {
+          console.log(`[DoorOpener] auth rejected`);
+          ws.close();
+          return;
+        }
+
+        console.log(`[DoorOpener] client authenticated: ${ws.id}`);
+        const pingInterval = setInterval(() => {
+          try { ws.raw.ping(); } catch {}
+        }, 5000);
+        doorOpenerClients.set(ws.id, { ws, pingInterval });
+      },
+      close(ws: any) {
+        const client = doorOpenerClients.get(ws.id);
+        if (client) {
+          clearInterval(client.pingInterval);
+          doorOpenerClients.delete(ws.id);
+        }
+        console.log(`[DoorOpener] client disconnected: ${ws.id}`);
+      },
+    })
     .ws("/signaling", {
       open(ws: any) {
         console.log(`[Signaling] client connected: ${ws.id}`);
