@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 
-import events from "./routes/events";
+// import events from "./routes/events";
 import doorbell from "./routes/doorbell";
 import discord from "./routes/discord";
 import phonebell from "./routes/phonebell";
