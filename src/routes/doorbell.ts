@@ -4,10 +4,7 @@ import { z } from "zod";
 
 import { env } from "../env";
 
-const messageSchema = z.object({
-  type: z.enum(["set", "status"]),
-  ringing: z.boolean(),
-});
+const messageSchema = z.coerce.boolean();
 
 type DoorbellMessage = z.infer<typeof messageSchema>;
 
@@ -46,10 +43,7 @@ router.group("/doorbell", (app) => {
     .ws("/", {
       open: (ws) => {
         ws.data.doorbells.addClient(ws);
-        ws.data.doorbells.sendMessageToClient(ws, {
-          type: "status",
-          ringing: ws.data.store.isRinging,
-        });
+        ws.data.doorbells.sendMessageToClient(ws, ws.data.store.isRinging);
       },
       message: (ws, data) => {
         let result: DoorbellMessage;
@@ -66,11 +60,8 @@ router.group("/doorbell", (app) => {
 
         const message = validation.data;
 
-        ws.data.store.isRinging = message.ringing;
-        ws.data.doorbells.sendToConnectedClients({
-          type: "status",
-          ringing: ws.data.store.isRinging,
-        });
+        ws.data.store.isRinging = message;
+        ws.data.doorbells.sendToConnectedClients(ws.data.store.isRinging);
       },
       close(ws) {
         ws.data.doorbells.removeClient(ws);
@@ -88,10 +79,7 @@ router.group("/doorbell", (app) => {
 
       store.isRinging = true;
 
-      doorbells.sendToConnectedClients({
-        type: "status",
-        ringing: store.isRinging,
-      });
+      doorbells.sendToConnectedClients(store.isRinging);
 
       return { ok: true };
     });
