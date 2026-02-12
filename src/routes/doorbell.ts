@@ -4,10 +4,15 @@ import { z } from "zod";
 
 import { env } from "../env";
 
-const messageSchema = z.object({
-  type: z.enum(["set", "status"]),
-  ringing: z.boolean(),
-});
+const messageSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.enum(["set", "status"]),
+    ringing: z.boolean(),
+  }),
+  z.object({
+    type: z.enum(["ping", "pong"]),
+  }),
+]);
 
 type DoorbellMessage = z.infer<typeof messageSchema>;
 
@@ -66,11 +71,26 @@ router.group("/doorbell", (app) => {
 
         const message = validation.data;
 
-        ws.data.store.isRinging = message.ringing;
-        ws.data.doorbells.sendToConnectedClients({
-          type: "status",
-          ringing: ws.data.store.isRinging,
-        });
+        switch (message.type) {
+          case "set":
+            ws.data.store.isRinging = message.ringing;
+            ws.data.doorbells.sendToConnectedClients({
+              type: "status",
+              ringing: ws.data.store.isRinging,
+            });
+            break;
+          case "ping":
+            ws.send(
+              JSON.stringify({
+                type: "pong",
+              } satisfies DoorbellMessage),
+            );
+            break;
+          case "status":
+            break;
+          case "pong":
+            break;
+        }
       },
       close(ws) {
         ws.data.doorbells.removeClient(ws);
