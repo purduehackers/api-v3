@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { env } from "../env";
 
 const KNOWN_NUMBERS = [
@@ -54,9 +54,11 @@ const doorOpenerClients = new Map<
 >();
 
 function triggerDoorOpener() {
-  console.log(`[DoorOpener] Sending open command to ${doorOpenerClients.size} client(s)`);
+  console.log(
+    `[DoorOpener] Sending open command to ${doorOpenerClients.size} client(s)`,
+  );
   for (const client of doorOpenerClients.values()) {
-    client.ws.send(JSON.stringify({ type: "open" }));
+    client.ws.send(JSON.stringify({ type: "Open" }));
   }
 }
 
@@ -64,7 +66,7 @@ function triggerDoorOpener() {
 
 function sendToPhone(conn: PhoneConnection, message: OutgoingMessage) {
   console.log(
-    `[${conn.phoneType}] Phone Socket tx: ${JSON.stringify(message)}`
+    `[${conn.phoneType}] Phone Socket tx: ${JSON.stringify(message)}`,
   );
   conn.ws.send(JSON.stringify(message));
 }
@@ -123,7 +125,7 @@ function updatePhoneFromState(conn: PhoneConnection) {
 
 function handleDial(conn: PhoneConnection, number: string) {
   console.log(
-    `[${conn.phoneType}] Dial handler: status=${conn.status}, hook=${conn.hookState}, dialed_so_far='${conn.dialedNumber}', number='${number}'`
+    `[${conn.phoneType}] Dial handler: status=${conn.status}, hook=${conn.hookState}, dialed_so_far='${conn.dialedNumber}', number='${number}'`,
   );
 
   switch (conn.status) {
@@ -134,7 +136,7 @@ function handleDial(conn: PhoneConnection, number: string) {
 
       if (!exactMatch) {
         const isValidPrefix = KNOWN_NUMBERS.some((n) =>
-          n.startsWith(conn.dialedNumber)
+          n.startsWith(conn.dialedNumber),
         );
         if (!isValidPrefix) {
           conn.dialedNumber = "0";
@@ -180,16 +182,14 @@ function handleDial(conn: PhoneConnection, number: string) {
 function handleHook(conn: PhoneConnection, state: boolean) {
   conn.hookState = state;
   console.log(
-    `[${conn.phoneType}] Hook handler: status=${conn.status}, hook_state=${state}`
+    `[${conn.phoneType}] Hook handler: status=${conn.status}, hook_state=${state}`,
   );
 
   if (!state) {
     // User picked up the phone
     const callGoing =
       Array.from(phoneConnections.values()).filter((c) => c.inCall).length > 0;
-    console.log(
-      `[${conn.phoneType}] Hook pickup: call_going=${callGoing}`
-    );
+    console.log(`[${conn.phoneType}] Hook pickup: call_going=${callGoing}`);
 
     if (callGoing) {
       // Join existing call
@@ -310,7 +310,8 @@ function createPhoneWsHandler(phoneType: PhoneType) {
 
       if (!conn.authenticated) {
         // Auth message is a raw string (API key), not JSON
-        const key = typeof data === "string" ? data.trim() : String(data).trim();
+        const key =
+          typeof data === "string" ? data.trim() : String(data).trim();
         if (key !== env.PHONE_API_KEY) {
           console.log(`[${phoneType}] auth rejected`);
           ws.close();
@@ -334,9 +335,7 @@ function createPhoneWsHandler(phoneType: PhoneType) {
       // Bun auto-parses JSON WS messages into objects
       const message = typeof data === "string" ? JSON.parse(data) : data;
 
-      console.log(
-        `[${phoneType}] Phone Socket rx: ${JSON.stringify(message)}`
-      );
+      console.log(`[${phoneType}] Phone Socket rx: ${JSON.stringify(message)}`);
 
       if (message.type === "Dial" && typeof message.number === "string") {
         handleDial(conn, message.number);
@@ -361,14 +360,17 @@ router.group("/phonebell", (app) =>
     .ws("/inside", createPhoneWsHandler("Inside"))
     .ws("/door-opener", {
       open(ws: any) {
-        console.log(`[DoorOpener] client connected: ${ws.id}, awaiting auth...`);
+        console.log(
+          `[DoorOpener] client connected: ${ws.id}, awaiting auth...`,
+        );
       },
       message(ws: any, data: any) {
         // Check if already authenticated
         if (doorOpenerClients.has(ws.id)) return;
 
         // Auth: raw string API key
-        const key = typeof data === "string" ? data.trim() : String(data).trim();
+        const key =
+          typeof data === "string" ? data.trim() : String(data).trim();
         if (key !== env.DOOR_OPENER_API_KEY) {
           console.log(`[DoorOpener] auth rejected`);
           ws.close();
@@ -377,7 +379,9 @@ router.group("/phonebell", (app) =>
 
         console.log(`[DoorOpener] client authenticated: ${ws.id}`);
         const pingInterval = setInterval(() => {
-          try { ws.raw.ping(); } catch {}
+          try {
+            ws.raw.ping();
+          } catch {}
         }, 5000);
         doorOpenerClients.set(ws.id, { ws, pingInterval });
       },
@@ -427,6 +431,23 @@ router.group("/phonebell", (app) =>
         console.log(`[Signaling] client disconnected: ${ws.id}`);
       },
     })
+    .post(
+      "/open",
+      async ({ headers, status }) => {
+        if (headers.authorization !== `Bearer ${env.DISCORD_API_KEY}`) {
+          return status(403, "Invalid API key");
+        }
+
+        triggerDoorOpener();
+
+        return status(204);
+      },
+      {
+        headers: t.Object({
+          authorization: t.String(),
+        }),
+      },
+    ),
 );
 
 export default router;
