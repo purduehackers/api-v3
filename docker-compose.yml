@@ -9,3 +9,10 @@ services:
       - .env
     ports:
       - "4226:3000"
+    networks:
+      - default
+      - interstate
+
+networks:
+  interstate:
+    external: true
