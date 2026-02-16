@@ -10,9 +10,17 @@ const authMessageSchema = z.object({
 type AuthenticationMessage = z.infer<typeof authMessageSchema>;
 
 const discordMessageSchema = z.object({
-  image: z.string().url().optional(),
-  timestamp: z.string(),
-  username: z.string(),
+  id: z.string(),
+  channel: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  author: z.object({
+    id: z.string(),
+    name: z.string(),
+    avatarHash: z.string().nullable(),
+  }),
+  timestamp: z.iso.datetime({ offset: true }).transform((d) => new Date(d)),
   content: z.string(),
   attachments: z.array(z.string()).default([]),
 });
