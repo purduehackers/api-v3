@@ -21,7 +21,10 @@ const discordMessageSchema = z.object({
     avatarHash: z.string().nullable(),
   }),
   timestamp: z.iso.datetime({ offset: true }).transform((d) => new Date(d)),
-  content: z.string(),
+  content: z.object({
+    markdown: z.string(),
+    html: z.string(),
+  }),
   attachments: z.array(z.string()).default([]),
 });
 type DiscordMessage = z.infer<typeof discordMessageSchema>;
