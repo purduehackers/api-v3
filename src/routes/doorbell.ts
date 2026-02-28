@@ -2,7 +2,28 @@ import { Elysia } from "elysia";
 import type { ElysiaWS } from "elysia/ws";
 import { z } from "zod";
 
-import { env } from "../env";
+/**
+ * Error class for doorbell errors that can be sent over the WebSocket connection
+ */
+class DoorbellError extends Error {
+  toWSMessage(
+    level: Extract<DoorbellMessage, { type: "diagnostic" }>["level"],
+  ): DoorbellMessage {
+    return {
+      type: "diagnostic",
+      level,
+      kind: this.name,
+      message: this.message,
+    };
+  }
+}
+
+class NoClientsError extends DoorbellError {
+  name = "NoClientsError" as const;
+  constructor() {
+    super("No other clients are connected to the doorbell at the moment");
+  }
+}
 
 const messageSchema = z.discriminatedUnion("type", [
   z.object({
@@ -12,8 +33,13 @@ const messageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.enum(["ping", "pong"]),
   }),
+  z.object({
+    type: z.literal("diagnostic"),
+    level: z.enum(["info", "warning", "error"]),
+    kind: z.string(),
+    message: z.string(),
+  }),
 ]);
-
 type DoorbellMessage = z.infer<typeof messageSchema>;
 
 class DoorbellClientManager {
@@ -35,7 +61,10 @@ class DoorbellClientManager {
     return client.send(JSON.stringify(message));
   }
 
-  sendToConnectedClients(message: DoorbellMessage) {
+  sendToConnectedClients(message: DoorbellMessage, ws?: ElysiaWS) {
+    if (ws !== undefined && this.clients.size === 1 && this.clients.has(ws)) {
+      throw new NoClientsError();
+    }
     for (const client of this.clients) {
       this.sendMessageToClient(client, message);
     }
@@ -74,10 +103,18 @@ router.group("/doorbell", (app) => {
         switch (message.type) {
           case "set":
             ws.data.store.isRinging = message.ringing;
-            ws.data.doorbells.sendToConnectedClients({
-              type: "status",
-              ringing: ws.data.store.isRinging,
-            });
+            try {
+              ws.data.doorbells.sendToConnectedClients({
+                type: "status",
+                ringing: ws.data.store.isRinging,
+              });
+            } catch (error) {
+              if (error instanceof DoorbellError) {
+                ws.send(JSON.stringify(error.toWSMessage("warning")));
+              } else {
+                throw error;
+              }
+            }
             break;
           case "ping":
             ws.send(
@@ -108,12 +145,15 @@ router.group("/doorbell", (app) => {
 
       store.isRinging = true;
 
-      doorbells.sendToConnectedClients({
-        type: "status",
-        ringing: store.isRinging,
-      });
-
-      return { ok: true };
+      try {
+        doorbells.sendToConnectedClients({
+          type: "status",
+          ringing: store.isRinging,
+        });
+      } finally {
+        // Ignore errors
+        return { ok: true };
+      }
     });
 
   return app;
