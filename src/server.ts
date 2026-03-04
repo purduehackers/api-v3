@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 import doorbell from "./routes/doorbell";
 import discord from "./routes/discord";
 import phonebell from "./routes/phonebell";
+import sign from "./routes/sign";
 
 const app = new Elysia();
 
@@ -19,6 +20,7 @@ app.get("/", () => {
 app.use(doorbell);
 app.use(discord);
 app.use(phonebell);
+app.use(sign);
 
 export default app;
 export type App = typeof app;
