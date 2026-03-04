@@ -10,10 +10,21 @@ const authMessageSchema = z.object({
 type AuthenticationMessage = z.infer<typeof authMessageSchema>;
 
 const discordMessageSchema = z.object({
-  image: z.string().url().optional(),
-  timestamp: z.string(),
-  username: z.string(),
-  content: z.string(),
+  id: z.string(),
+  channel: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  author: z.object({
+    id: z.string(),
+    name: z.string(),
+    avatarHash: z.string().nullable(),
+  }),
+  timestamp: z.iso.datetime({ offset: true }).transform((d) => new Date(d)),
+  content: z.object({
+    markdown: z.string(),
+    html: z.string(),
+  }),
   attachments: z.array(z.string()).default([]),
 });
 type DiscordMessage = z.infer<typeof discordMessageSchema>;
@@ -31,10 +42,12 @@ class BotClientManager {
 
   addClient(client: ElysiaWS) {
     this.clients[client.id] = client;
+    console.log(`[Discord] bot client authorized`, { id: client.id });
   }
 
   removeClient(client: ElysiaWS) {
     delete this.clients[client.id];
+    console.log(`[Discord] bot client disconnected`, { id: client.id });
   }
 
   sendMessageToClient(client: ElysiaWS, message: DiscordMessage) {
@@ -57,10 +70,12 @@ class DashboardClientManager {
 
   addClient(client: ElysiaWS) {
     this.clients.add(client);
+    console.log(`[Discord] dashboard client connected`, { id: client.id });
   }
 
   removeClient(client: ElysiaWS) {
     this.clients.delete(client);
+    console.log(`[Discord] dashboard client disconnected`, { id: client.id });
   }
 
   sendMessageToClient(client: ElysiaWS, message: DiscordMessage) {
@@ -81,6 +96,9 @@ router.group("/discord", (app) =>
     .decorate("bots", new BotClientManager())
     .decorate("dashboards", new DashboardClientManager())
     .ws("/bot", {
+      open: (ws) => {
+        console.log(`[Discord] bot client connected`, { id: ws.id });
+      },
       message: (ws, data) => {
         let result: unknown;
         try {
@@ -99,6 +117,9 @@ router.group("/discord", (app) =>
           const message = validation.data as AuthenticationMessage;
 
           if (message.token !== env.DISCORD_API_KEY) {
+            console.log(`[Discord] bot client failed authentication`, {
+              id: ws.id,
+            });
             ws.send(JSON.stringify({ auth: "rejected" }));
             ws.close();
             return;
@@ -115,6 +136,7 @@ router.group("/discord", (app) =>
         }
 
         const message = validation.data as DiscordMessage;
+        console.debug(`[Discord] message received for forwarding`, message);
         ws.data.dashboards.sendToConnectedClients(message);
       },
       close: (ws) => {
