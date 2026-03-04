@@ -123,6 +123,10 @@ class SignClientManager {
       client.send(JSON.stringify(message));
     }
   }
+
+  getConnectedDevices(): string[] {
+    return Array.from(this.clients.keys());
+  }
 }
 
 // --- Router ---
@@ -146,6 +150,9 @@ router.group("/sign", (app) => {
       provisioned = true;
 
       return { key: env.SIGN_PROVISION_KEY };
+    })
+    .get("/devices", ({ signClients }) => {
+      return { devices: signClients.getConnectedDevices() };
     })
     .get("/:device/wifi", async ({ params, set, signClients }) => {
       const client = signClients.getClient(params.device);
