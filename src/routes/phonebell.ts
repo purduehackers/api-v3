@@ -18,7 +18,7 @@ type PhoneStatus =
   | "in_call"
   | "awaiting_others";
 
-type Sound = "None" | "Dialtone" | "Ringback" | "Hangup";
+type Sound = "None" | "Dialtone" | "Ringback" | "Hangup" | "DoorOpen";
 type PhoneType = "Inside" | "Outside";
 
 interface OutgoingMessage {
@@ -173,6 +173,12 @@ function handleDial(conn: PhoneConnection, number: string) {
       if (conn.phoneType === "Inside" && number === "0") {
         console.log("[Inside] Door opener triggered");
         triggerDoorOpener();
+        // Play door open sound on all in-call phones
+        for (const c of phoneConnections.values()) {
+          if (c.inCall && c.authenticated) {
+            sendToPhone(c, { type: "PlaySound", sound: "DoorOpen" });
+          }
+        }
       }
       break;
     }
