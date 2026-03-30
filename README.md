@@ -18,5 +18,3 @@ Run the dev server:
 $ bun run --hot src/index.ts
 Server is running on http://localhost:3000
 ```
-
-test
