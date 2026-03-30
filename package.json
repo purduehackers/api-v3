@@ -1,23 +1,38 @@
 {
-  "name": "phack-api-2",
-  "module": "index.ts",
-  "type": "module",
+  "name": "@purduehackers/api-v3",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile server",
-    "start": "bun run src/index.ts"
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:apply:local": "wrangler d1 migrations apply ATTENDANCE_DB --local",
+    "db:apply:remote": "wrangler d1 migrations apply ATTENDANCE_DB",
+    "cf:types": "wrangler types",
+    "cf:deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@t3-oss/env-core": "^0.12.0",
-    "elysia": "^1.4.25",
-    "sanity": "^3.82.0",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.9",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "@cloudflare/vitest-pool-workers": "^0.13.5",
+    "@factory/eslint-plugin": "^0.1.0",
+    "@types/node": "^25.5.0",
+    "drizzle-kit": "^0.31.10",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
+    "oxlint-tsgolint": "^0.18.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.2",
+    "vitest": "^4.1.2",
+    "wrangler": "^4.78.0"
   }
 }
