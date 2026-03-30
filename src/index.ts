@@ -1,4 +1,12 @@
-import server from "./server";
+import app from "./server";
 
-server.listen({ hostname: "0.0.0.0", port: 3000 });
-console.log("Server is running on http://localhost:3000");
+import Discord from "./actors/discord/index";
+import Doorbell from "./actors/doorbell/index";
+import Phonebell from "./actors/phonebell/index";
+import Sign from "./actors/sign/index";
+
+export { Discord, Doorbell, Phonebell, Sign };
+
+export default {
+  fetch: app.fetch,
+} satisfies ExportedHandler<Env>;

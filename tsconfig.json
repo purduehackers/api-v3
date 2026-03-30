@@ -1,27 +1,25 @@
 {
   "compilerOptions": {
-    // Enable latest features
-    "lib": ["ESNext", "DOM"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleDetection": "force",
+    "target": "es2024",
+    "lib": ["es2024"],
     "jsx": "react-jsx",
-    "allowJs": true,
 
-    // Bundler mode
+    "module": "es2022",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+
+    "allowJs": true,
+    "checkJs": false,
+
     "noEmit": true,
 
-    // Best practices
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
 
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
+    "skipLibCheck": true,
+    "types": ["./worker-configuration.d.ts", "node"],
+  },
+  "include": ["src", "worker-configuration.d.ts", "drizzle.config.ts"],
 }

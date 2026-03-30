@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "api-v3",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-17",
+  "migrations": [
+    {
+      "new_sqlite_classes": ["MyDurableObject"],
+      "tag": "v1",
+    },
+    {
+      "deleted_classes": ["MyDurableObject"],
+      "new_sqlite_classes": ["Discord", "Doorbell", "Phonebell", "Sign"],
+      "tag": "v2",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "Discord",
+        "name": "DISCORD_ACTOR",
+      },
+      {
+        "class_name": "Doorbell",
+        "name": "DOORBELL_ACTOR",
+      },
+      {
+        "class_name": "Phonebell",
+        "name": "PHONEBELL_ACTOR",
+      },
+      {
+        "class_name": "Sign",
+        "name": "SIGN_ACTOR",
+      },
+    ],
+  },
+  "d1_databases": [
+    {
+      "binding": "ATTENDANCE_DB",
+      "database_name": "attendance-db",
+      "database_id": "c6594dfa-b3c8-4b91-ba61-e80aa2d21f00",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "observability": {
+    "enabled": true,
+  },
+  "upload_source_maps": true,
+  "compatibility_flags": ["nodejs_compat"],
+}
