@@ -11,7 +11,4 @@ export const PhoneIncomingMessageSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const PhoneIncomingMessageCodec = z.codec(z.string(), PhoneIncomingMessageSchema, {
-  decode: (json) => JSON.parse(json) as z.infer<typeof PhoneIncomingMessageSchema>,
-  encode: (value) => JSON.stringify(value),
-});
+export type PhoneIncomingMessage = z.infer<typeof PhoneIncomingMessageSchema>;

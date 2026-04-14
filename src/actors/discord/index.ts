@@ -1,9 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
 
 import { normalizePathname, toResponse } from "../../lib/http";
+import type { HttpResult } from "../../lib/types";
 import {
   DiscordAuthMessageCodec,
   DiscordMessageCodec,
+  DiscordMessageSchema,
 } from "../../protocol/discord";
 import { DISCORD_BOT_PATH, DISCORD_DASHBOARD_PATH } from "./constants";
 import { DiscordSocketRole } from "./enums";
@@ -55,6 +57,29 @@ export default class Discord extends DurableObject<Env> {
       status: 101,
       webSocket: client,
     });
+  }
+
+  publishMessage(
+    token: string | null,
+    payload: unknown,
+  ): HttpResult<{ ok: true }> {
+    if (token !== this.env.DISCORD_API_KEY) {
+      return { status: 403, text: "Invalid API key" };
+    }
+
+    const validation = DiscordMessageSchema.safeParse(payload);
+    if (!validation.success) {
+      return { status: 400, text: "Invalid message" };
+    }
+
+    const serialized = JSON.stringify(validation.data);
+    for (const dashboard of this.ctx.getWebSockets(
+      DiscordSocketRole.Dashboard,
+    )) {
+      dashboard.send(serialized);
+    }
+
+    return { status: 200, json: { ok: true } };
   }
 
   webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): void {

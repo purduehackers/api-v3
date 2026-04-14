@@ -1,4 +1,4 @@
-import { PhoneIncomingMessageCodec } from "../../protocol/phonebell";
+import { PhoneIncomingMessageSchema } from "../../protocol/phonebell";
 import { PhoneSound, PhoneStatus, PhoneType } from "./enums";
 import { hasKnownNumberPrefix, isKnownNumber } from "./lib";
 import { PhonebellSocketCoordinator } from "./socket-coordinator";
@@ -47,7 +47,14 @@ export class PhonebellStateMachine {
       return;
     }
 
-    const validation = PhoneIncomingMessageCodec.safeDecode(text);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return;
+    }
+
+    const validation = PhoneIncomingMessageSchema.safeParse(parsed);
     if (!validation.success) {
       return;
     }

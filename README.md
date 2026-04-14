@@ -166,7 +166,7 @@ Connect the Discord bot. Requires WebSocket upgrade.
 
 **Auth:** After connecting, send an auth message:
 ```json
-{ "type": "auth", "token": "<DISCORD_API_KEY>" }
+{ "token": "<DISCORD_API_KEY>" }
 ```
 
 Server responds with `{ "auth": "complete" }` or `{ "auth": "rejected" }` (closes with code 1008).
@@ -184,6 +184,16 @@ Server responds with `{ "auth": "complete" }` or `{ "auth": "rejected" }` (close
 ```
 
 Messages are broadcast to all connected dashboard clients.
+
+#### `POST /discord/bot`
+
+Publish a Discord message to all connected dashboard clients. The body uses the same shape as the WebSocket message above.
+
+**Auth:** `Authorization: Bearer <DISCORD_API_KEY>`
+
+**Response (200):** `{ "ok": true }`
+
+**Errors:** `400` invalid JSON or message shape, `403` invalid API key
 
 #### `GET /discord/dashboard` (WebSocket)
 

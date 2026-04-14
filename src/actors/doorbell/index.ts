@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 
 import { normalizePathname, toResponse } from "../../lib/http";
 import type { HttpResult } from "../../lib/types";
-import { DoorbellMessageCodec } from "../../protocol/doorbell";
+import { DoorbellMessageSchema } from "../../protocol/doorbell";
 import {
   DOORBELL_PATH,
   DOORBELL_SOCKET_TAG,
@@ -97,7 +97,14 @@ export default class Doorbell extends DurableObject<Env> {
 
     const rawMessage =
       typeof message === "string" ? message : new TextDecoder().decode(message);
-    const validation = DoorbellMessageCodec.safeDecode(rawMessage);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawMessage);
+    } catch {
+      return;
+    }
+
+    const validation = DoorbellMessageSchema.safeParse(parsed);
     if (!validation.success) {
       return;
     }

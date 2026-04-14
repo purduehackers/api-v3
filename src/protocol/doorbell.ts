@@ -23,7 +23,4 @@ export const DoorbellMessageSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const DoorbellMessageCodec = z.codec(z.string(), DoorbellMessageSchema, {
-  decode: (json) => JSON.parse(json) as z.infer<typeof DoorbellMessageSchema>,
-  encode: (value) => JSON.stringify(value),
-});
+export type DoorbellMessage = z.infer<typeof DoorbellMessageSchema>;
