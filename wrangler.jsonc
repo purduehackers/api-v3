@@ -2,11 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "api-v3",
   "main": "src/index.ts",
-  "compatibility_date": "2026-03-17",
+  "compatibility_date": "2026-04-19",
+
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
   },
+
   "migrations": [
     {
       "new_sqlite_classes": ["MyDurableObject"],
@@ -18,6 +20,7 @@
       "tag": "v2",
     },
   ],
+
   "durable_objects": {
     "bindings": [
       {
@@ -38,6 +41,7 @@
       },
     ],
   },
+
   "d1_databases": [
     {
       "binding": "ATTENDANCE_DB",
@@ -46,6 +50,11 @@
       "migrations_dir": "migrations",
     },
   ],
+
   "upload_source_maps": true,
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "nodejs_als"],
+
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  }
 }
