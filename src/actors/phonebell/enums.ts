@@ -17,4 +17,5 @@ export enum PhoneSound {
   Ringback = "Ringback",
   Hangup = "Hangup",
   DoorOpen = "DoorOpen",
+  DoorFailed = "DoorFailed",
 }

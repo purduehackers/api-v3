@@ -1,8 +1,11 @@
+import * as Sentry from "@sentry/cloudflare";
+
 import { PhoneIncomingMessageSchema } from "../../protocol/phonebell";
 import { PhoneSound, PhoneStatus, PhoneType } from "./enums";
 import { hasKnownNumberPrefix, isKnownNumber } from "./lib";
 import { PhonebellSocketCoordinator } from "./socket-coordinator";
 import type { PhoneConnectionAttachment } from "./types";
+
 
 export class PhonebellStateMachine {
   constructor(
@@ -173,10 +176,10 @@ export class PhonebellStateMachine {
     }
   }
 
-  private notifyInCallPhonesDoorOpened(): void {
+  private notifyInCallPhones(sound: PhoneSound): void {
     for (const { ws, attachment } of this.coordinator.getPhoneConnections()) {
       if (attachment.authenticated && attachment.inCall) {
-        ws.send(JSON.stringify({ type: "PlaySound", sound: PhoneSound.DoorOpen }));
+        ws.send(JSON.stringify({ type: "PlaySound", sound }));
       }
     }
   }
@@ -220,8 +223,13 @@ export class PhonebellStateMachine {
       }
       case PhoneStatus.InCall:
         if (attachment.phoneType === PhoneType.Inside && number === "0") {
-          this.coordinator.triggerDoorOpener();
-          this.notifyInCallPhonesDoorOpened();
+          try {
+            this.coordinator.triggerDoorOpener();
+            this.notifyInCallPhones(PhoneSound.DoorOpen);
+          } catch (err) {
+            Sentry.captureException(err);
+            this.notifyInCallPhones(PhoneSound.DoorFailed);
+          }
         }
         break;
       case PhoneStatus.AwaitingOthers:

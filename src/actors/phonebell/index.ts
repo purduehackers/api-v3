@@ -70,8 +70,15 @@ export default class Phonebell extends DurableObject<Env> {
       };
     }
 
-    this.coordinator.triggerDoorOpener();
-    return { status: 204 };
+    try {
+      this.coordinator.triggerDoorOpener();
+      return { status: 204 };
+    } catch (err) {
+      return {
+        status: 500,
+        text: err instanceof Error ? err.message : String(err),
+      };
+    }
   }
 
   async webSocketMessage(

@@ -93,11 +93,20 @@ export class PhonebellSocketCoordinator {
   }
 
   triggerDoorOpener(): void {
-    for (const socket of this.ctx.getWebSockets(PHONEBELL_SOCKET_TAGS.doorOpener)) {
-      const attachment = socket.deserializeAttachment();
-      if (isDoorOpenerAttachment(attachment) && attachment.authenticated) {
-        socket.send(JSON.stringify({ type: "Open" }));
-      }
+    const sockets = this.ctx
+      .getWebSockets(PHONEBELL_SOCKET_TAGS.doorOpener)
+      .filter(socket => {
+        const attachment = socket.deserializeAttachment();
+        return isDoorOpenerAttachment(attachment) && attachment.authenticated;
+      });
+    if (sockets.length === 0) {
+      throw new Error("No door-opener connected via WebSocket");
+    }
+    for (const socket of sockets) {
+      socket.send(JSON.stringify({ type: "Open" }));
+      // TODO(@rayhanadev): wait for ACK from sockets.
+      // Message will look like `{"type": "OpenAck"}`.
+      // If no ACK after 1 or 2 seconds, throw an Error.
     }
   }
 
